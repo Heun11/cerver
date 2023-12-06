@@ -15,6 +15,7 @@ typedef struct{
   char* staticDir;
   char* templateDir;
   char* resourceDir;
+  char* scriptDir;
 }HTTP_Server;
 
 typedef struct{

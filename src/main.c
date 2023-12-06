@@ -22,18 +22,20 @@ int main(int argc, char *argv[])
 
   // adding folders
   HTTP_AddDir(&server, "statc", "static/");
-  HTTP_AddDir(&server, "templates", "templates/");
-  HTTP_AddDir(&server, "resources", "resources/");
+  HTTP_AddDir(&server, "template", "templates/");
+  HTTP_AddDir(&server, "resource", "resources/");
+  HTTP_AddDir(&server, "script", "js/");
 
   // html routes
   ROUTES_Route* root = ROUTES_InitRoute("/", HTTP_RenderTemplate(server.templateDir, "index.html"));
   ROUTES_AddRoute(root, "/about", HTTP_RenderTemplate(server.templateDir, "about.html"));
   ROUTES_AddRoute(root, "/404", HTTP_RenderTemplate(server.templateDir, "404.html"));
-  
-  printf("\n%s\n", ROUTES_SearchRoute(root, "/404")->value->data);
-
   // css routes
   ROUTES_AddRoute(root, "/style.css", HTTP_RenderTemplate(server.staticDir, "style.css"));
+  // js routes
+  ROUTES_AddRoute(root, "/script.js", HTTP_RenderTemplate(server.scriptDir, "script.js"));
+
+  printf("\n%s\n", ROUTES_SearchRoute(root, "/script.js")->value->data);
   // show all routes
   ROUTES_PrintRoutesInOrder(root);
 

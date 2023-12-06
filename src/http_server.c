@@ -6,9 +6,15 @@ void HTTP_InitServer(HTTP_Server* http_server, int port)
   http_server->socket = socket(AF_INET, SOCK_STREAM, 0);
   http_server->port = port;
 
+  if (setsockopt(http_server->socket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0){
+    printf("setsockopt(SO_REUSEADDR) failed");
+    exit(0);
+  }
+
   http_server->staticDir = "static/";
   http_server->templateDir = "templates/";
   http_server->resourceDir = "resources/";
+  http_server->scriptDir = "scripts/";
   // adress
   struct sockaddr_in server_address;
   server_address.sin_family = AF_INET;
@@ -28,11 +34,14 @@ void HTTP_AddDir(HTTP_Server* http_server, char* dir_type, char* dir_name)
   if(strcmp(dir_type, "static")==0){
     http_server->staticDir = dir_name;
   }
-  else if(strcmp(dir_type, "templates")==0){
+  else if(strcmp(dir_type, "template")==0){
     http_server->templateDir = dir_name;
   }
-  else if(strcmp(dir_type, "resources")==0){
+  else if(strcmp(dir_type, "resource")==0){
     http_server->resourceDir = dir_name;
+  }
+  else if(strcmp(dir_type, "script")==0){
+    http_server->scriptDir = dir_name;
   }
 }
 
@@ -45,6 +54,7 @@ HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename)
   HTTP_Template* tmp;
   int i;
   char fnBuff[1024];
+  char resData[1024];
 
   tmp = (HTTP_Template*)malloc(sizeof(HTTP_Template));
   strcpy(fnBuff, dir_name);
@@ -68,10 +78,12 @@ HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename)
     i++;
   }
   buff[i]='\0';
+  
+  strcpy(resData, "HTTP/1.1 200 OK\r\n\n");
 
-  tmp->size = sz*1024*sizeof(char);
+  tmp->size = (sz+strlen(resData))*sizeof(char);
   tmp->data = malloc(tmp->size);
-  strcpy (tmp->data, "HTTP/1.1 200 OK\r\n\n");
+  strcpy(tmp->data, resData);
   strcat(tmp->data, buff);
 
   fclose(html_data);
