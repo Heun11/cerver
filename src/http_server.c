@@ -1,11 +1,14 @@
 #include "http_server.h"
-#include <stdlib.h>
 
 void HTTP_InitServer(HTTP_Server* http_server, int port)
 {
   // socket init
   http_server->socket = socket(AF_INET, SOCK_STREAM, 0);
   http_server->port = port;
+
+  http_server->staticDir = "static/";
+  http_server->templateDir = "templates/";
+  http_server->resourceDir = "resources/";
   // adress
   struct sockaddr_in server_address;
   server_address.sin_family = AF_INET;
@@ -20,8 +23,20 @@ void HTTP_InitServer(HTTP_Server* http_server, int port)
   listen(http_server->socket, 5);
 }
 
+void HTTP_AddDir(HTTP_Server* http_server, char* dir_type, char* dir_name)
+{
+  if(strcmp(dir_type, "static")==0){
+    http_server->staticDir = dir_name;
+  }
+  else if(strcmp(dir_type, "templates")==0){
+    http_server->templateDir = dir_name;
+  }
+  else if(strcmp(dir_type, "resources")==0){
+    http_server->resourceDir = dir_name;
+  }
+}
 
-HTTP_Template* HTTP_RenderTemplate(char* filename)
+HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename)
 {
   FILE* html_data;
   int sz;
@@ -29,9 +44,17 @@ HTTP_Template* HTTP_RenderTemplate(char* filename)
   char ch;
   HTTP_Template* tmp;
   int i;
+  char fnBuff[1024];
 
   tmp = (HTTP_Template*)malloc(sizeof(HTTP_Template));
-  html_data = fopen(filename, "r");
+  strcpy(fnBuff, dir_name);
+  strcat(fnBuff, filename);
+  if(access(fnBuff, F_OK)==0){
+    html_data = fopen(fnBuff, "r");
+  }else {
+    printf("error - file dont exist\n");
+    exit(0);
+  }
 
   fseek(html_data, 0L, SEEK_END);
   sz = ftell(html_data);
@@ -44,10 +67,11 @@ HTTP_Template* HTTP_RenderTemplate(char* filename)
     buff[i] = ch;
     i++;
   }
+  buff[i]='\0';
 
   tmp->size = sz*1024*sizeof(char);
   tmp->data = malloc(tmp->size);
-  strncpy (tmp->data, "HTTP/1.1 200 OK\r\n\n", 1024);
+  strcpy (tmp->data, "HTTP/1.1 200 OK\r\n\n");
   strcat(tmp->data, buff);
 
   fclose(html_data);

@@ -15,16 +15,27 @@
 
 int main(int argc, char *argv[])
 {
-  // init routes
-  ROUTES_Route* root = ROUTES_InitRoute("/", HTTP_RenderTemplate("index.html"));
-  ROUTES_AddRoute(root, "/about", HTTP_RenderTemplate("about.html"));
-  ROUTES_AddRoute(root, "/404", HTTP_RenderTemplate("404.html"));
-  ROUTES_PrintRoutesInOrder(root);
-
-  // socket
+    // socket
   HTTP_Server server;
   HTTP_InitServer(&server, PORT);
   printf("running server on http://127.0.0.1:%d/\n\n", PORT);
+
+  // adding folders
+  HTTP_AddDir(&server, "statc", "static/");
+  HTTP_AddDir(&server, "templates", "templates/");
+  HTTP_AddDir(&server, "resources", "resources/");
+
+  // html routes
+  ROUTES_Route* root = ROUTES_InitRoute("/", HTTP_RenderTemplate(server.templateDir, "index.html"));
+  ROUTES_AddRoute(root, "/about", HTTP_RenderTemplate(server.templateDir, "about.html"));
+  ROUTES_AddRoute(root, "/404", HTTP_RenderTemplate(server.templateDir, "404.html"));
+  
+  printf("\n%s\n", ROUTES_SearchRoute(root, "/404")->value->data);
+
+  // css routes
+  ROUTES_AddRoute(root, "/style.css", HTTP_RenderTemplate(server.staticDir, "style.css"));
+  // show all routes
+  ROUTES_PrintRoutesInOrder(root);
 
   int client_socket;
 
@@ -39,7 +50,7 @@ int main(int argc, char *argv[])
 		char *method = "";
 		char *urlRoute = "";
 		char *client_http_header = strtok(client_msg, "\n");
-		printf("\n\t%s\n", client_http_header);
+		printf("\n%s\n", client_http_header);
 		char *header_token = strtok(client_http_header, " ");
 	
 		int header_parse_counter = 0;
@@ -56,8 +67,6 @@ int main(int argc, char *argv[])
 
 		printf("The method is %s\n", method);
 		printf("The route is %s\n", urlRoute);
-
-    char template[100] = "";
 
     ROUTES_Route* branch = ROUTES_SearchRoute(root, urlRoute);
     if(!branch){
