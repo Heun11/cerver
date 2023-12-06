@@ -1,4 +1,6 @@
 #include "http_server.h"
+#include <stdlib.h>
+#include <string.h>
 
 void HTTP_InitServer(HTTP_Server* http_server, int port)
 {
@@ -45,6 +47,47 @@ void HTTP_AddDir(HTTP_Server* http_server, char* dir_type, char* dir_name)
   }
 }
 
+char* HTTP_GetContentType(char* filename)
+{
+  char buff1[MAXFILENAME];
+  char buff2[MAXFILENAME];
+  char* token;
+
+  strcpy(buff1, filename);
+  token = strtok(buff1, ".");
+  while( token != NULL ) {
+    strcpy(buff2, token);
+    token = strtok(NULL, ".");
+  }
+  // printf("%s\n", buff2);
+
+  if(strcmp("html", buff2)==0){
+    strcpy(buff1, "Content-Type: text/html \r\n");
+  }
+  else if(strcmp("css", buff2)==0){
+    strcpy(buff1, "Content-Type: text/css \r\n");
+  }
+  else if(strcmp("js", buff2)==0){
+    strcpy(buff1, "Content-Type: text/javascript \r\n");
+  }
+  else if(strcmp("jpg", buff2)==0 || strcmp("jpeg", buff2)==0){
+    strcpy(buff1, "Content-Type: image/jpeg \r\n");
+  }
+  else if(strcmp("png", buff2)==0){
+    strcpy(buff1, "Content-Type: image/png \r\n");
+  }
+  else if(strcmp("gif", buff2)==0){
+    strcpy(buff1, "Content-Type: image/gif \r\n");
+  }
+  else{
+    strcpy (buff1, "Content-Type: application/octet-stream \r\n");
+  }
+
+  char* header_buff = buff1;
+  
+  return header_buff;
+}
+
 HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename)
 {
   FILE* html_data;
@@ -53,7 +96,7 @@ HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename)
   char ch;
   HTTP_Template* tmp;
   int i;
-  char fnBuff[1024];
+  char fnBuff[MAXFILENAME];
   char resData[1024];
 
   tmp = (HTTP_Template*)malloc(sizeof(HTTP_Template));
@@ -77,9 +120,27 @@ HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename)
     buff[i] = ch;
     i++;
   }
-  buff[i]='\0';
   
-  strcpy(resData, "HTTP/1.1 200 OK\r\n\n");
+  char buff1[MAXFILENAME];
+  char buff2[MAXFILENAME];
+  strcpy(buff1, filename);
+  char* token = strtok(buff1, ".");
+  while( token != NULL ) {
+    strcpy(buff2, token);
+    token = strtok(NULL, ".");
+  }
+
+  if((strcmp("html", buff2)==0)||(strcmp("css", buff2)==0)||(strcmp("js", buff2)==0)||
+  (strcmp("txt", buff2)==0)||(strcmp("plain", buff2)==0)||(strcmp("csv", buff2)==0)){
+    buff[i]='\0';
+  }
+  else{
+    buff[i]=EOF;
+  }
+
+  strcpy(resData, "HTTP/1.1 200 OK\r\n");
+  strcat(resData, HTTP_GetContentType(filename));
+  strcat(resData, "\n");
 
   tmp->size = (sz+strlen(resData))*sizeof(char);
   tmp->data = malloc(tmp->size);

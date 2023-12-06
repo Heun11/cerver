@@ -9,6 +9,13 @@
 #include <netinet/in.h>
 #include <string.h>
 
+#include <fcntl.h>
+#include <sys/stat.h>
+
+#define MAXFILENAME 200
+#define HEADERSIZE 1024
+#define MAXLEN 100000
+
 typedef struct{
   int socket;
   int port;
