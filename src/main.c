@@ -35,8 +35,8 @@ int main(int argc, char *argv[])
   // js routes
   ROUTES_AddRoute(root, "/script.js", HTTP_RenderTemplate(server.scriptDir, "script.js"));
   // resources routes
-  // ROUTES_AddRoute(root, "/test.gif", HTTP_RenderTemplate(server.resourceDir, "test.gif"));
-  ROUTES_AddRoute(root, "/img.png", HTTP_RenderTemplate(server.resourceDir, "img.png"));
+  ROUTES_AddRoute(root, "/test.gif", HTTP_RenderTemplate(server.resourceDir, "test.gif"));
+  ROUTES_AddRoute(root, "/testing.jpg", HTTP_RenderTemplate(server.resourceDir, "testing.jpg"));
   // show all routes
   ROUTES_PrintRoutesInOrder(root);
 

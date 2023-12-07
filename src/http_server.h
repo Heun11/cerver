@@ -30,8 +30,15 @@ typedef struct{
   int size;
 }HTTP_Template;
 
+typedef struct{
+  char* data;
+  int size;
+}HTTP_FileContent;
+
 void HTTP_InitServer(HTTP_Server* http_server, int port);
 void HTTP_AddDir(HTTP_Server* http_server, char* dir_type, char* dir_name);
+char* HTTP_GetContentType(char* filename);
+HTTP_FileContent* HTTP_GetContentOfFile(char* dir_name, char* filename, char* filetype);
 HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename);
 
 #endif

@@ -1,5 +1,4 @@
 #include "http_server.h"
-#include <stdlib.h>
 #include <string.h>
 
 void HTTP_InitServer(HTTP_Server* http_server, int port)
@@ -83,72 +82,90 @@ char* HTTP_GetContentType(char* filename)
     strcpy (buff1, "Content-Type: application/octet-stream \r\n");
   }
 
-  char* header_buff = buff1;
+  char* header_buff = (char*)malloc((1+strlen(buff1))*sizeof(char));
+  strcpy(header_buff, buff1);
   
   return header_buff;
 }
 
-HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename)
+HTTP_FileContent* HTTP_GetContentOfFile(char* dir_name, char* filename, char* filetype)
 {
-  FILE* html_data;
-  int sz;
-  char* buff;
-  char ch;
-  HTTP_Template* tmp;
-  int i;
+  FILE* fp;
+  int fs;
   char fnBuff[MAXFILENAME];
-  char resData[1024];
+  char* buff;
+  int i;
+  char ch;
+  HTTP_FileContent* fcp;
 
-  tmp = (HTTP_Template*)malloc(sizeof(HTTP_Template));
   strcpy(fnBuff, dir_name);
   strcat(fnBuff, filename);
   if(access(fnBuff, F_OK)==0){
-    html_data = fopen(fnBuff, "r");
-  }else {
-    printf("error - file dont exist\n");
-    exit(0);
-  }
+    if(strcmp(filetype, "Content-Type: text/html \r\n")==0 || strcmp(filetype, "Content-Type: text/css \r\n")==0 
+    || strcmp(filetype, "Content-Type: text/javascript \r\n")==0 || strcmp(filetype, "Content-Type: text/plain \r\n")==0 
+    || strcmp(filetype, "Content-Type: text/csv \r\n")==0 || strcmp(filetype, "Content-Type: text/xml \r\n")==0){
+      // read text   
+      fp = fopen(fnBuff, "r");
+      fseek(fp, 0L, SEEK_END);
+      fs = ftell(fp);
+      fseek(fp, 0L, SEEK_SET);
+      fs++;
 
-  fseek(html_data, 0L, SEEK_END);
-  sz = ftell(html_data);
-  fseek(html_data, 0L, SEEK_SET);
-  
-  buff = malloc((sz+1)*sizeof(char));
-  
-  i = 0;
-  while((ch=fgetc(html_data))!=EOF){
-    buff[i] = ch;
-    i++;
-  }
-  
-  char buff1[MAXFILENAME];
-  char buff2[MAXFILENAME];
-  strcpy(buff1, filename);
-  char* token = strtok(buff1, ".");
-  while( token != NULL ) {
-    strcpy(buff2, token);
-    token = strtok(NULL, ".");
-  }
+      buff = (char*)malloc((fs)*sizeof(char));
+      i = 0;
+      while((ch=fgetc(fp))!=EOF){
+        buff[i] = ch;
+        i++;
+      }
+      buff[i]='\0';
+    }
+    else{
+      // read binary
+      fp = fopen(fnBuff, "rb");
+      fseek(fp, 0L, SEEK_END);
+      fs = ftell(fp);
+      fseek(fp, 0L, SEEK_SET);
+      fs++;
 
-  if((strcmp("html", buff2)==0)||(strcmp("css", buff2)==0)||(strcmp("js", buff2)==0)||
-  (strcmp("txt", buff2)==0)||(strcmp("plain", buff2)==0)||(strcmp("csv", buff2)==0)){
-    buff[i]='\0';
+      buff = (char*)malloc((fs)*sizeof(char));
+      fread(buff, fs, 1, fp);
+    }
+    fclose(fp);
+    fcp = (HTTP_FileContent*)malloc(sizeof(HTTP_FileContent));
+    fcp->data = buff;
+    fcp->size = fs;
   }
   else{
-    buff[i]=EOF;
+    printf("Error opening file\n");
+    exit(0);
   }
+  
+  return fcp;
+}
+
+HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename)
+{
+  HTTP_Template* tmp;
+  char resData[HEADERSIZE];
+
+  tmp = (HTTP_Template*)malloc(sizeof(HTTP_Template));
+  HTTP_FileContent* fcp = HTTP_GetContentOfFile(dir_name, filename, HTTP_GetContentType(filename));
 
   strcpy(resData, "HTTP/1.1 200 OK\r\n");
   strcat(resData, HTTP_GetContentType(filename));
+  char content_size_buff[64];
+  sprintf(content_size_buff, "Content-Length: %d\n", fcp->size);
+  strcat(resData, content_size_buff);
+  strcat(resData, "Accept-Ranges: bytes\n");
+  strcat(resData, "Connection: close\n");
   strcat(resData, "\n");
 
-  tmp->size = (sz+strlen(resData))*sizeof(char);
+  tmp->size = (fcp->size+strlen(resData))*sizeof(char);
   tmp->data = malloc(tmp->size);
   strcpy(tmp->data, resData);
-  strcat(tmp->data, buff);
+  memcpy(tmp->data+strlen(resData), fcp->data, fcp->size);
 
-  fclose(html_data);
-  free(buff);
+  // printf("%s\n", tmp->data);
   return tmp;
 }
 
