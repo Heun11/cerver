@@ -81,6 +81,7 @@ char* HTTP_GetContentType(char* filename)
   else{
     strcpy (buff1, "Content-Type: application/octet-stream \r\n");
   }
+  free(token);
 
   char* header_buff = (char*)malloc((1+strlen(buff1))*sizeof(char));
   strcpy(header_buff, buff1);
@@ -164,6 +165,9 @@ HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename)
   tmp->data = malloc(tmp->size);
   strcpy(tmp->data, resData);
   memcpy(tmp->data+strlen(resData), fcp->data, fcp->size);
+  
+  free(fcp->data);
+  free(fcp);
 
   // printf("%s\n", tmp->data);
   return tmp;
