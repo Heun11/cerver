@@ -179,15 +179,17 @@ HTTP_Template* HTTP_RenderTemplate(HTTP_Server* http_server, char* filename)
     return NULL;
   }
 
-  strcpy(resData, "HTTP/1.1 200 OK\r\n");
-  strcat(resData, filetype);
-  char content_size_buff[64];
-  sprintf(content_size_buff, "Content-Length: %d\n", fcp->size);
-  strcat(resData, content_size_buff);
-  strcat(resData, "Accept-Ranges: bytes\n");
-  strcat(resData, "Connection: close\n");
-  strcat(resData, "\n");
+  // strcpy(resData, "HTTP/1.1 200 OK\r\n");
+  // strcat(resData, filetype);
+  // char content_size_buff[64];
+  // sprintf(content_size_buff, "Content-Length: %d\n", fcp->size);
+  // strcat(resData, content_size_buff);
+  // strcat(resData, "Accept-Ranges: bytes\n");
+  // strcat(resData, "Connection: close\n");
+  // strcat(resData, "\n");
 
+  sprintf(resData, "HTTP/1.1 200 OK\r\n%sContent-Length: %d\nAccept-Ranges: bytes\nConnection: close\n\n", filetype, fcp->size);
+  
   tmp = (HTTP_Template*)malloc(sizeof(HTTP_Template));
   
   tmp->size = (fcp->size+strlen(resData))*sizeof(char);
