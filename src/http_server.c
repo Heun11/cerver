@@ -78,6 +78,9 @@ char* HTTP_GetContentType(char* filename)
   else if(strcmp("gif", buff2)==0){
     strcpy(buff1, "Content-Type: image/gif \r\n");
   }
+  else if(strcmp("json", buff2)==0){
+    strcpy(buff1, "Content-Type: application/json \r\n");
+  }
   else{
     strcpy (buff1, "Content-Type: application/octet-stream \r\n");
   }
@@ -101,10 +104,19 @@ HTTP_FileContent* HTTP_GetContentOfFile(char* dir_name, char* filename, char* fi
 
   strcpy(fnBuff, dir_name);
   strcat(fnBuff, filename);
+
+  struct stat path_stat;
+  stat(fnBuff, &path_stat);
+  if(!S_ISREG(path_stat.st_mode)){
+    printf("filename is not a file!\n");
+    return NULL;
+  }
+
+
   if(access(fnBuff, F_OK)==0){
     if(strcmp(filetype, "Content-Type: text/html \r\n")==0 || strcmp(filetype, "Content-Type: text/css \r\n")==0 
     || strcmp(filetype, "Content-Type: text/javascript \r\n")==0 || strcmp(filetype, "Content-Type: text/plain \r\n")==0 
-    || strcmp(filetype, "Content-Type: text/csv \r\n")==0 || strcmp(filetype, "Content-Type: text/xml \r\n")==0){
+    || strcmp(filetype, "Content-Type: text/csv \r\n")==0 || strcmp(filetype, "Content-Type: text/xml \r\n")==0 || strcmp(filetype, "Content-Type: application/json \r\n")==0){
       // read text   
       fp = fopen(fnBuff, "r");
       fseek(fp, 0L, SEEK_END);
@@ -163,7 +175,7 @@ HTTP_Template* HTTP_RenderTemplate(HTTP_Server* http_server, char* filename)
   }
 
   HTTP_FileContent* fcp = HTTP_GetContentOfFile(dirname, filename, filetype);
-  if(!fcp){
+  if(fcp==NULL){
     return NULL;
   }
 

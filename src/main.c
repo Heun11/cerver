@@ -67,10 +67,8 @@ int main(int argc, char *argv[])
     ROUTES_Route* branch = ROUTES_SearchRoute(root, urlRoute);
     if(!branch){
       free(branch);
-      char* token;
-      token = strtok(urlRoute, "/");
-      HTTP_Template* tmp = HTTP_RenderTemplate(&server, token);
-      if(tmp){
+      HTTP_Template* tmp = HTTP_RenderTemplate(&server, urlRoute+1);
+      if(tmp!=NULL){
         send(client_socket, tmp->data, tmp->size, 0);
         free(tmp);
       }
