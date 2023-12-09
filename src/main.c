@@ -27,16 +27,9 @@ int main(int argc, char *argv[])
   HTTP_AddDir(&server, "script", "js/");
 
   // html routes
-  ROUTES_Route* root = ROUTES_InitRoute("/", HTTP_RenderTemplate(server.templateDir, "index.html"));
-  ROUTES_AddRoute(root, "/about", HTTP_RenderTemplate(server.templateDir, "about.html"));
-  ROUTES_AddRoute(root, "/404", HTTP_RenderTemplate(server.templateDir, "404.html"));
-  // css routes
-  ROUTES_AddRoute(root, "/style.css", HTTP_RenderTemplate(server.staticDir, "style.css"));
-  // js routes
-  ROUTES_AddRoute(root, "/script.js", HTTP_RenderTemplate(server.scriptDir, "script.js"));
-  // resources routes
-  ROUTES_AddRoute(root, "/test.gif", HTTP_RenderTemplate(server.resourceDir, "test.gif"));
-  ROUTES_AddRoute(root, "/testing.jpg", HTTP_RenderTemplate(server.resourceDir, "testing.jpg"));
+  ROUTES_Route* root = ROUTES_InitRoute("/", HTTP_RenderTemplate(&server, "index.html"));
+  ROUTES_AddRoute(root, "/about", HTTP_RenderTemplate(&server, "about.html"));
+  ROUTES_AddRoute(root, "/404", HTTP_RenderTemplate(&server, "404.html"));
   // show all routes
   ROUTES_PrintRoutesInOrder(root);
 
@@ -74,10 +67,21 @@ int main(int argc, char *argv[])
     ROUTES_Route* branch = ROUTES_SearchRoute(root, urlRoute);
     if(!branch){
       free(branch);
-      branch = ROUTES_SearchRoute(root, "/404");
+      char* token;
+      token = strtok(urlRoute, "/");
+      HTTP_Template* tmp = HTTP_RenderTemplate(&server, token);
+      if(tmp){
+        send(client_socket, tmp->data, tmp->size, 0);
+        free(tmp);
+      }
+      else{
+        branch = ROUTES_SearchRoute(root, "/404");
+        send(client_socket, branch->value->data, branch->value->size, 0);
+      }
     }
-
-    send(client_socket, branch->value->data, branch->value->size, 0);
+    else{
+      send(client_socket, branch->value->data, branch->value->size, 0);
+    }
     close(client_socket);
   }
     

@@ -110,9 +110,8 @@ HTTP_FileContent* HTTP_GetContentOfFile(char* dir_name, char* filename, char* fi
       fseek(fp, 0L, SEEK_END);
       fs = ftell(fp);
       fseek(fp, 0L, SEEK_SET);
-      fs++;
 
-      buff = (char*)malloc((fs)*sizeof(char));
+      buff = (char*)malloc((fs+1)*sizeof(char));
       i = 0;
       while((ch=fgetc(fp))!=EOF){
         buff[i] = ch;
@@ -126,7 +125,6 @@ HTTP_FileContent* HTTP_GetContentOfFile(char* dir_name, char* filename, char* fi
       fseek(fp, 0L, SEEK_END);
       fs = ftell(fp);
       fseek(fp, 0L, SEEK_SET);
-      fs++;
 
       buff = (char*)malloc((fs)*sizeof(char));
       fread(buff, fs, 1, fp);
@@ -138,22 +136,39 @@ HTTP_FileContent* HTTP_GetContentOfFile(char* dir_name, char* filename, char* fi
   }
   else{
     printf("Error opening file\n");
-    exit(0);
+    return NULL;
   }
   
   return fcp;
 }
 
-HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename)
+HTTP_Template* HTTP_RenderTemplate(HTTP_Server* http_server, char* filename)
 {
-  HTTP_Template* tmp;
+  HTTP_Template* tmp = NULL;
   char resData[HEADERSIZE];
+  char* filetype = HTTP_GetContentType(filename);
+  char dirname[MAXFILENAME];
 
-  tmp = (HTTP_Template*)malloc(sizeof(HTTP_Template));
-  HTTP_FileContent* fcp = HTTP_GetContentOfFile(dir_name, filename, HTTP_GetContentType(filename));
+  if(strcmp(filetype, "Content-Type: text/html \r\n")==0){
+    strcpy(dirname, http_server->templateDir);
+  }
+  else if(strcmp(filetype, "Content-Type: text/css \r\n")==0){
+    strcpy(dirname, http_server->staticDir);
+  } 
+  else if(strcmp(filetype, "Content-Type: text/javascript \r\n")==0){
+    strcpy(dirname, http_server->scriptDir);
+  } 
+  else{
+    strcpy(dirname, http_server->resourceDir);
+  }
+
+  HTTP_FileContent* fcp = HTTP_GetContentOfFile(dirname, filename, filetype);
+  if(!fcp){
+    return NULL;
+  }
 
   strcpy(resData, "HTTP/1.1 200 OK\r\n");
-  strcat(resData, HTTP_GetContentType(filename));
+  strcat(resData, filetype);
   char content_size_buff[64];
   sprintf(content_size_buff, "Content-Length: %d\n", fcp->size);
   strcat(resData, content_size_buff);
@@ -161,6 +176,8 @@ HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename)
   strcat(resData, "Connection: close\n");
   strcat(resData, "\n");
 
+  tmp = (HTTP_Template*)malloc(sizeof(HTTP_Template));
+  
   tmp->size = (fcp->size+strlen(resData))*sizeof(char);
   tmp->data = malloc(tmp->size);
   strcpy(tmp->data, resData);
@@ -168,6 +185,7 @@ HTTP_Template* HTTP_RenderTemplate(char* dir_name, char* filename)
   
   free(fcp->data);
   free(fcp);
+  free(filetype);
 
   // printf("%s\n", tmp->data);
   return tmp;
